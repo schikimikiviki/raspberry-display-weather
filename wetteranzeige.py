@@ -1,4 +1,3 @@
-
 import fcntl
 import struct
 import board
@@ -11,6 +10,16 @@ import adafruit_ssd1306
 from io import BytesIO
 import cairosvg
 import math  
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+# import variables
+key = os.getenv('KEY')
+lon = os.getenv('LON')
+lat = os.getenv('LAT')
+
 
 # Set pins and initialize OLED
 RESET_PIN = digitalio.DigitalInOut(board.D4)
@@ -26,8 +35,8 @@ font1 = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 10
 font2 = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 14)
 font3 = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 16)
 
-def get_icon(id, size=32):
-    path = f'./icons/{id}.svg'
+def get_icon(icon_code, size=32):
+    path = f'./icons/{icon_code}.svg'
     if os.path.isfile(path):
         return Image.open(
             BytesIO(cairosvg.svg2png(url=path))  # convert svg to png
@@ -37,11 +46,10 @@ def get_icon(id, size=32):
 
 def fetch_weather_data():
     try:
-        # OpenWeather API request
-        response = requests.get(
-            url='https://api.openweathermap.org/data/2.5/onecall?appid=d3355b38ac0d56b2e91cefcd5fd744fb&units=metric&lang=de&lat=48.1833373&lon=16.2844278',
-            timeout=10
-        )
+        # Format the URL with proper values
+        url = f'https://api.openweathermap.org/data/2.5/weather?lat={lat}&lon={lon}&appid={key}&lang=de&units=metric'
+        response = requests.get(url, timeout=10)
+        response.raise_for_status()  # Raise an error for bad responses
         return response.json()
     except Exception as e:
         print(f"Error getting weather data: {e}")
@@ -61,45 +69,26 @@ while True:
 
     if data:
         try:
-            # Display hourly data
-            for step in [
-                {'title': 'Jetzt:', 'data': data['current']},
-                {'title': 'in einer Stunde:', 'data': data['hourly'][1]},
-                {'title': 'in 2 Stunden:', 'data': data['hourly'][2]},
-                {'title': 'in 3 Stunden:', 'data': data['hourly'][3]},
-                {'title': 'in 6 Stunden:', 'data': data['hourly'][6]},
-            ]:
-                image = Image.new("1", (oled.width, oled.height))
-                draw = ImageDraw.Draw(image)
-
-                draw.text((0, 0), step['title'], font=font3, fill=255)
-                draw.text((0, 16), step['data']['weather'][0]['description'], font=font2, fill=255)
-                # Use math.ceil to always round up the temperature
-                temperature = math.ceil(step['data']['temp'])
-                draw.text((48, 32), str(temperature) + '°C', font=font3, fill=255)
-                draw.text((48, 48), str(step['data']['humidity']) + '%', font=font3, fill=255)
-                image.paste(get_icon(step['data']['weather'][0]['icon']), (8, 32))
-
-                oled.image(image)
-                oled.show()
-                time.sleep(4)
+            # Display current weather
+            current_weather = data['weather'][0]['description']
+            temp = math.ceil(data['main']['temp'])
+            humidity = data['main']['humidity']
+            icon_code = data['weather'][0]['icon']
 
             image = Image.new("1", (oled.width, oled.height))
             draw = ImageDraw.Draw(image)
 
-            draw.text((0, 0), 'nächste Tage', font=font3, fill=255)
-            for i in range(1, 4):
-                # Use math.ceil to always round up daily temperatures
-                day_temp = math.ceil(data['daily'][i]['temp']['max'])
-                night_temp = math.ceil(data['daily'][i]['temp']['min'])
-                draw.text((24, 16 * i), str(day_temp) + '°C', font=font2, fill=255)
-                draw.text((76, 16 * i), str(night_temp) + '°C', font=font2, fill=255)
-                image.paste(get_icon(data['daily'][i]['weather'][0]['icon'], 16), (0, 16 * i))
+            draw.text((0, 0), "Aktuelles Wetter:", font=font3, fill=255)
+            draw.text((0, 16), current_weather, font=font2, fill=255)
+            draw.text((48, 32), f"{temp}°C", font=font3, fill=255)
+            draw.text((48, 48), f"{humidity}%", font=font3, fill=255)
+            image.paste(get_icon(icon_code), (8, 32))
 
             oled.image(image)
             oled.show()
-            time.sleep(8)
+            time.sleep(4)
 
+         
         except Exception as e:
             print(f"Error displaying weather data: {e}")
     else:

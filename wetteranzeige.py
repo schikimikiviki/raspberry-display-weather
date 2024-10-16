@@ -44,17 +44,37 @@ def get_icon(icon_code, size=32):
     else:
         return Image.new("1", (size, size))  # return empty image
 
+session = requests.Session()
+
 def fetch_weather_data():
     try:
         # Format the URL with proper values
-        url = f'https://api.openweathermap.org/data/2.5/weather?lat={lat}&lon={lon}&appid={key}&lang=de&units=metric'
-        response = requests.get(url, timeout=10)
-        response.raise_for_status()  # Raise an error for bad responses
+        timestamp = int(time.time())
+        url = f'https://api.openweathermap.org/data/2.5/weather?lat={lat}&lon={lon}&appid={key}&lang=de&units=metric&_={timestamp}'
+        
+        # Set session-level headers to ensure no caching
+        session.headers.update({
+            'Cache-Control': 'no-cache',
+            'Pragma': 'no-cache'
+        })
+        
+        # Send the GET request using the session
+        response = session.get(url, timeout=10)
+        
+        # Print headers to verify caching control
+        print("Response Headers: ", response.headers) 
+        print("Date from headers: ", response.headers.get('Date'))
+        
+        # Raise an error for any unsuccessful responses
+        response.raise_for_status() 
+        
+        # Return the parsed JSON response
         return response.json()
+    
     except Exception as e:
         print(f"Error getting weather data: {e}")
         return None
-
+        
 # Initialize variables
 data = fetch_weather_data()
 last_fetch_time = time.time()
@@ -72,6 +92,7 @@ while True:
             # Display current weather
             current_weather = data['weather'][0]['description']
             temp = math.ceil(data['main']['temp'])
+            print("TEMPERATURE IS: ", temp)
             humidity = data['main']['humidity']
             icon_code = data['weather'][0]['icon']
 

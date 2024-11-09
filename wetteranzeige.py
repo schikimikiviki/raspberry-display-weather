@@ -82,60 +82,51 @@ last_fetch_time = time.time()
 fetch_interval_hours = 6  # Number of hours between each fetch
 fetch_interval = fetch_interval_hours * 60 * 60  # Convert hours to seconds
 
-display_interval = 5  # seconds to show each screen (weather or time)
-last_display_time = time.time()
-showing_weather = True  # Start by showing weather
-
 while True:
     current_time = time.time()
-
-    # Fetch weather data if needed based on fetch interval
     if current_time - last_fetch_time >= fetch_interval or data is None:
         data = fetch_weather_data()
         last_fetch_time = current_time
 
-    # Display current data
     if data:
         try:
-            # Check if it's time to switch displays
-            if current_time - last_display_time >= display_interval:
-                showing_weather = not showing_weather  # Toggle display
-                last_display_time = current_time  # Reset last display time
+            # Display current weather
+            current_weather = data['weather'][0]['description']
+            temp = math.ceil(data['main']['temp'])
+   
+            humidity = data['main']['humidity']
+            icon_code = data['weather'][0]['icon']
 
-            # Only update the display if the toggle state changes
             image = Image.new("1", (oled.width, oled.height))
             draw = ImageDraw.Draw(image)
 
-            if showing_weather:
-                # Display current weather
-                current_weather = data['weather'][0]['description']
-                temp = math.ceil(data['main']['temp'])
-                humidity = data['main']['humidity']
-                icon_code = data['weather'][0]['icon']
+            draw.text((0, 0), "Aktuelles Wetter:", font=font3, fill=255)
+            draw.text((0, 16), current_weather, font=font2, fill=255)
+            draw.text((48, 32), f"{temp}°C", font=font3, fill=255)
+            draw.text((48, 48), f"{humidity}%", font=font3, fill=255)
+            image.paste(get_icon(icon_code), (8, 32))
 
-                draw.text((0, 0), "Aktuelles Wetter:", font=font3, fill=255)
-                draw.text((0, 16), current_weather, font=font2, fill=255)
-                draw.text((48, 32), f"{temp}°C", font=font3, fill=255)
-                draw.text((48, 48), f"{humidity}%", font=font3, fill=255)
-                image.paste(get_icon(icon_code), (8, 32))
-
-            else:
-                # Display current time
-                draw.text((0, 0), "Aktuelle Uhrzeit:", font=font3, fill=255)
-                now = datetime.now()
-                current_time_str = now.strftime("%H:%M:%S")
-                draw.text((10, 30), current_time_str, font=font3, fill=255)
-
-            # Show image on OLED
             oled.image(image)
             oled.show()
+            time.sleep(4)
 
-            time.sleep(0.1)  # Short sleep to reduce CPU usage
+            # Clear display for time
+            image = Image.new("1", (oled.width, oled.height))
+            draw = ImageDraw.Draw(image)
+            
+            draw.text((0, 0), "Aktuelle Uhrzeit:", font=font3, fill=255)
+            now = datetime.now()
+            current_time = now.strftime("%H:%M:%S")
+            draw.text((10, 30), current_time, font=font3, fill=255)
+
+            oled.image(image)
+            oled.show()
+            time.sleep(4) 
+
+
 
         except Exception as e:
-            print(f"Error displaying data: {e}")
-
+            print(f"Error displaying weather data: {e}")
     else:
         time.sleep(10)
-
 

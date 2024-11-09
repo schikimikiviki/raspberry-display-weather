@@ -82,20 +82,27 @@ last_fetch_time = time.time()
 fetch_interval_hours = 6  # Number of hours between each fetch
 fetch_interval = fetch_interval_hours * 60 * 60  # Convert hours to seconds
 
-display_interval = 10  # seconds to display each screen
+display_interval = 5  # seconds to show each screen (weather or time)
 last_display_time = time.time()
-showing_weather = True  # Start with weather display
+showing_weather = True  # Start by showing weather
 
 while True:
     current_time = time.time()
 
-    # Fetch weather data if needed based on the fetch interval
+    # Fetch weather data if needed based on fetch interval
     if current_time - last_fetch_time >= fetch_interval or data is None:
         data = fetch_weather_data()
         last_fetch_time = current_time
 
+    # Display current data
     if data:
         try:
+            # Check if it's time to switch displays
+            if current_time - last_display_time >= display_interval:
+                showing_weather = not showing_weather  # Toggle display
+                last_display_time = current_time  # Reset last display time
+
+            # Only update the display if the toggle state changes
             image = Image.new("1", (oled.width, oled.height))
             draw = ImageDraw.Draw(image)
 
@@ -123,11 +130,6 @@ while True:
             oled.image(image)
             oled.show()
 
-            # Check if display interval has passed to switch displays
-            if current_time - last_display_time >= display_interval:
-                showing_weather = not showing_weather  # Toggle between weather and time
-                last_display_time = current_time  # Reset last display time
-
             time.sleep(0.1)  # Short sleep to reduce CPU usage
 
         except Exception as e:
@@ -135,4 +137,5 @@ while True:
 
     else:
         time.sleep(10)
+
 

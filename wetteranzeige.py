@@ -12,6 +12,7 @@ import cairosvg
 import math  
 import os
 from dotenv import load_dotenv
+from datetime import datetime
 
 load_dotenv()
 
@@ -109,7 +110,19 @@ while True:
             oled.show()
             time.sleep(4)
 
-         
+            # Clear display for time
+            image = Image.new("1", (oled.width, oled.height))
+            draw = ImageDraw.Draw(image)
+            
+            draw.text((0, 0), "Aktuelle Uhrzeit:", font=font3, fill=255)
+            now = datetime.now()
+            current_time = now.strftime("%H:%M:%S")
+            draw.text((0, 16), current_time, font=font2, fill=255)
+
+            oled.image(image)
+            oled.show()
+            time.sleep(4) 
+
         except Exception as e:
             print(f"Error displaying weather data: {e}")
     else:

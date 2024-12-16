@@ -115,9 +115,28 @@ while True:
             draw = ImageDraw.Draw(image)
             
             draw.text((0, 0), "Aktuelle Uhrzeit:", font=font3, fill=255)
-            now = datetime.now()
+            now = datetime.utcnow() 
             current_time = now.strftime("%H:%M:%S")
-            draw.text((10, 30), current_time, font=font3, fill=255)
+            draw.text((10, 20), current_time, font=font3, fill=255)
+            day = now.strftime('%A')
+            if day == "Monday":
+                short = "Mo"
+            elif day == "Tuesday":
+                short = "Di"
+            elif day == "Wednesday":
+                short = "Mi"
+            elif day == "Thursday": 
+                short = "Do"
+            elif day == "Friday": 
+                short = "Fr"
+            elif day == "Saturday": 
+                short ="Sa"
+            elif day == "Sunday": 
+                short = "So"
+
+            fulldate = '%s/%s' % (now.day, now.month)
+            draw.text((10, 40), f'{short}, der {fulldate}', font=font3, fill=255)
+
 
             oled.image(image)
             oled.show()
